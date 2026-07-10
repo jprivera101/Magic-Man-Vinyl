@@ -1,0 +1,133 @@
+// Prisma schema — Magic Man Vinyl
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum OrderStatus {
+  PENDIENTE
+  CONFIRMADO
+  EN_TRANSITO
+  EN_GUATEMALA
+  ENVIADO
+  RECHAZADO
+}
+
+model SkuCounter {
+  id      Int @id @default(1)
+  lastSku Int @default(0)
+}
+
+model Product {
+  id         String      @id @default(cuid())
+  sku        String
+  artist     String
+  album      String
+  price      Decimal     @db.Decimal(10, 2)
+  imageUrl   String
+  genre      String?
+  year       Int?
+  condition  String?
+  units      Int         @default(1)
+  isCustom   Boolean     @default(false)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  orderItems OrderItem[]
+  promotions Promotion[]
+
+  @@index([createdAt])
+  @@index([sku])
+}
+
+model Promotion {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  percent   Int
+  startsAt  DateTime @default(now())
+  endsAt    DateTime
+  createdAt DateTime @default(now())
+
+  @@index([productId])
+}
+
+model PriceLog {
+  id        String   @id @default(cuid())
+  sku       String
+  price     Decimal  @db.Decimal(10, 2)
+  productId String?
+  createdAt DateTime @default(now())
+
+  @@index([sku])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  nombre    String
+  apellido  String
+  telefono  String?
+  email     String?
+  direccion String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  orders    Order[]
+
+  @@index([telefono])
+  @@index([email])
+}
+
+model Order {
+  id                   Int         @id @default(autoincrement())
+  codigo               String      @unique
+  clientId             String?
+  client               Client?     @relation(fields: [clientId], references: [id])
+  nombre               String
+  apellido             String
+  telefono             String?
+  email                String?
+  direccion            String
+  depositoPath         String?
+  depositoBanco        String?
+  depositoNumeroCuenta String?
+  depositoTipoCuenta   String?
+  depositoTitular      String?
+  status               OrderStatus @default(PENDIENTE)
+  rejectionReason      String?
+  createdAt            DateTime    @default(now())
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([codigo])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  price     Decimal @db.Decimal(10, 2)
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model BankAccount {
+  id           String   @id @default(cuid())
+  banco        String
+  numeroCuenta String
+  tipoCuenta   String   @default("")
+  titular      String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([active])
+}
