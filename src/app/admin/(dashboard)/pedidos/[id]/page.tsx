@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, User, Phone, Mail, MapPin } from "lucide-react";
+import { ArrowLeft, Pencil, User, Phone, Mail, MapPin } from "lucide-react";
 import { getOrderById } from "@/lib/orders";
 import { formatQuetzales, formatFechaHora } from "@/lib/format";
 import { OrderStatusBadge } from "@/components/StatusBadge";
@@ -37,7 +37,18 @@ export default async function PedidoDetallePage({
         <h1 className="font-display text-2xl font-bold text-deep-grove">
           Orden {order.codigo}
         </h1>
-        <OrderStatusBadge status={order.status} />
+        <div className="flex items-center gap-2">
+          {isCustom && (
+            <Link
+              href={`/admin/pedidos/${order.id}/editar`}
+              className="flex h-9 w-9 items-center justify-center rounded-full text-deep-grove/50 transition hover:bg-deep-grove/10 hover:text-deep-grove"
+              aria-label="Editar dirección y precio"
+            >
+              <Pencil size={16} />
+            </Link>
+          )}
+          <OrderStatusBadge status={order.status} />
+        </div>
       </div>
       <p className="text-sm text-deep-grove/50">{formatFechaHora(order.createdAt)}</p>
 

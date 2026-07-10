@@ -247,6 +247,23 @@ export async function createCustomOrder(data: {
   });
 }
 
+/** Edición limitada de un pedido personalizado: solo dirección y precio por vinilo. */
+export async function updateCustomOrderDetails(
+  orderId: number,
+  data: { direccion: string; items: { id: string; price: number }[] },
+) {
+  return prisma.$transaction(async (tx) => {
+    await tx.order.update({ where: { id: orderId }, data: { direccion: data.direccion } });
+    for (const item of data.items) {
+      await tx.orderItem.updateMany({
+        where: { id: item.id, orderId },
+        data: { price: item.price },
+      });
+    }
+    return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: ORDER_INCLUDE });
+  });
+}
+
 export async function updateOrderStatus(
   id: number,
   status: $Enums.OrderStatus,

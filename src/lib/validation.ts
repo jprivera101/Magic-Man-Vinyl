@@ -143,6 +143,27 @@ export const customOrderItemsSchema = z
 
 export type CustomOrderItemInput = z.infer<typeof customOrderItemSchema>;
 
+export const customOrderEditSchema = z.object({
+  direccion: z
+    .string()
+    .trim()
+    .min(5, "Ingresa una dirección de envío completa")
+    .max(500),
+  items: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        price: z.coerce
+          .number({ message: "El precio debe ser un número" })
+          .positive("El precio debe ser mayor a 0")
+          .max(100000, "Ese precio parece demasiado alto"),
+      }),
+    )
+    .min(1, "Faltan los vinilos del pedido"),
+});
+
+export type CustomOrderEditInput = z.infer<typeof customOrderEditSchema>;
+
 export const trackOrderSchema = z.object({
   codigo: z
     .string()
