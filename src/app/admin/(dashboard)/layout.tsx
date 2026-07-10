@@ -3,12 +3,17 @@ import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { logoutAction } from "@/app/admin/actions";
+import { getPendingOrderCounts } from "@/lib/orders";
 
-export default function AdminDashboardLayout({
+export const dynamic = "force-dynamic";
+
+export default async function AdminDashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { catalogo, personalizado } = await getPendingOrderCounts();
+
   return (
     <div className="min-h-screen bg-vintage-cream">
       <header className="bg-deep-grove">
@@ -35,7 +40,7 @@ export default function AdminDashboardLayout({
             </button>
           </form>
         </div>
-        <AdminNav />
+        <AdminNav pendingCatalogo={catalogo} pendingPersonalizado={personalizado} />
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6">{children}</main>

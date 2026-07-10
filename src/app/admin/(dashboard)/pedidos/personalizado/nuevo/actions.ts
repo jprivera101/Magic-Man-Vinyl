@@ -15,7 +15,7 @@ export async function createCustomOrderAction(
   const clientParsed = customOrderClientSchema.safeParse({
     nombre: formData.get("nombre"),
     apellido: formData.get("apellido"),
-    telefono: formData.get("telefono"),
+    telefono: formData.get("telefono") || undefined,
     email: formData.get("email") || undefined,
     direccion: formData.get("direccion"),
   });

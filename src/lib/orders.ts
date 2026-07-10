@@ -211,7 +211,7 @@ export async function getOrderById(id: number) {
 export async function createCustomOrder(data: {
   nombre: string;
   apellido: string;
-  telefono: string;
+  telefono?: string;
   email?: string;
   direccion: string;
   items: { artist: string; album: string; price: number; imageUrl: string }[];
@@ -279,6 +279,19 @@ export async function updateOrderStatus(
     },
     include: ORDER_INCLUDE,
   });
+}
+
+/** Pendientes por revisar, separados por tipo — para el badge de navegación. */
+export async function getPendingOrderCounts() {
+  const [catalogo, personalizado] = await Promise.all([
+    prisma.order.count({
+      where: { status: "PENDIENTE", items: { none: { product: { isCustom: true } } } },
+    }),
+    prisma.order.count({
+      where: { status: "PENDIENTE", items: { some: { product: { isCustom: true } } } },
+    }),
+  ]);
+  return { catalogo, personalizado };
 }
 
 function normalizePhone(value: string) {

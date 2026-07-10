@@ -118,7 +118,6 @@ export function CustomOrderForm() {
             <input
               type="tel"
               name="telefono"
-              required
               inputMode="numeric"
               maxLength={8}
               pattern="\d{8}"
@@ -139,8 +138,8 @@ export function CustomOrderForm() {
           </label>
         </div>
         <p className="mt-1.5 text-xs text-deep-grove/50">
-          El correo es opcional, pero si lo agregas el cliente también podrá
-          usarlo para rastrear su pedido en /rastreo.
+          Deja al menos un teléfono o un correo — con eso el cliente también
+          podrá rastrear su pedido en /rastreo.
         </p>
         <label className="mt-4 block">
           <span className="mb-1.5 block text-sm font-semibold text-deep-grove">

@@ -102,29 +102,36 @@ export const orderSchema = z
 
 export type OrderInput = z.infer<typeof orderSchema>;
 
-export const customOrderClientSchema = z.object({
-  nombre: nameField("Nombre"),
-  apellido: nameField("Apellido"),
-  telefono: z
-    .string()
-    .trim()
-    .refine((v) => /^\d{8}$/.test(v), {
-      message: "El teléfono debe tener 8 dígitos (Guatemala)",
-    }),
-  email: z
-    .string()
-    .trim()
-    .transform(emptyToUndefined)
-    .optional()
-    .refine((v) => !v || z.string().email().safeParse(v).success, {
-      message: "Ingresa un correo válido",
-    }),
-  direccion: z
-    .string()
-    .trim()
-    .min(5, "Ingresa una dirección de envío completa")
-    .max(500),
-});
+export const customOrderClientSchema = z
+  .object({
+    nombre: nameField("Nombre"),
+    apellido: nameField("Apellido"),
+    telefono: z
+      .string()
+      .trim()
+      .transform(emptyToUndefined)
+      .optional()
+      .refine((v) => !v || /^\d{8}$/.test(v), {
+        message: "El teléfono debe tener 8 dígitos (Guatemala)",
+      }),
+    email: z
+      .string()
+      .trim()
+      .transform(emptyToUndefined)
+      .optional()
+      .refine((v) => !v || z.string().email().safeParse(v).success, {
+        message: "Ingresa un correo válido",
+      }),
+    direccion: z
+      .string()
+      .trim()
+      .min(5, "Ingresa una dirección de envío completa")
+      .max(500),
+  })
+  .refine((data) => Boolean(data.telefono) || Boolean(data.email), {
+    message: "Déjanos al menos un teléfono o un correo para contactar al cliente",
+    path: ["telefono"],
+  });
 
 export type CustomOrderClientInput = z.infer<typeof customOrderClientSchema>;
 
