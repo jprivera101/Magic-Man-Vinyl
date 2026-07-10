@@ -212,6 +212,7 @@ export async function createCustomOrder(data: {
   nombre: string;
   apellido: string;
   telefono: string;
+  email?: string;
   direccion: string;
   items: { artist: string; album: string; price: number; imageUrl: string }[];
 }) {

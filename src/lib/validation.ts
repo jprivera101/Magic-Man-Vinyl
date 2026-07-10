@@ -111,6 +111,14 @@ export const customOrderClientSchema = z.object({
     .refine((v) => /^\d{8}$/.test(v), {
       message: "El teléfono debe tener 8 dígitos (Guatemala)",
     }),
+  email: z
+    .string()
+    .trim()
+    .transform(emptyToUndefined)
+    .optional()
+    .refine((v) => !v || z.string().email().safeParse(v).success, {
+      message: "Ingresa un correo válido",
+    }),
   direccion: z
     .string()
     .trim()

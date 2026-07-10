@@ -110,21 +110,38 @@ export function CustomOrderForm() {
             />
           </label>
         </div>
-        <label className="mt-4 block">
-          <span className="mb-1.5 block text-sm font-semibold text-deep-grove">
-            Teléfono
-          </span>
-          <input
-            type="tel"
-            name="telefono"
-            required
-            inputMode="numeric"
-            maxLength={8}
-            pattern="\d{8}"
-            placeholder="Ej. 55551234"
-            className="w-full max-w-xs rounded-xl border border-deep-grove/20 bg-white px-4 py-3 text-base text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
-          />
-        </label>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-deep-grove">
+              Teléfono
+            </span>
+            <input
+              type="tel"
+              name="telefono"
+              required
+              inputMode="numeric"
+              maxLength={8}
+              pattern="\d{8}"
+              placeholder="Ej. 55551234"
+              className="w-full rounded-xl border border-deep-grove/20 bg-white px-4 py-3 text-base text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-sm font-semibold text-deep-grove">
+              Correo electrónico
+            </span>
+            <input
+              type="email"
+              name="email"
+              placeholder="tucorreo@ejemplo.com"
+              className="w-full rounded-xl border border-deep-grove/20 bg-white px-4 py-3 text-base text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
+            />
+          </label>
+        </div>
+        <p className="mt-1.5 text-xs text-deep-grove/50">
+          El correo es opcional, pero si lo agregas el cliente también podrá
+          usarlo para rastrear su pedido en /rastreo.
+        </p>
         <label className="mt-4 block">
           <span className="mb-1.5 block text-sm font-semibold text-deep-grove">
             Dirección de envío

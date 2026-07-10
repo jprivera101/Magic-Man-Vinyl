@@ -16,6 +16,7 @@ export async function createCustomOrderAction(
     nombre: formData.get("nombre"),
     apellido: formData.get("apellido"),
     telefono: formData.get("telefono"),
+    email: formData.get("email") || undefined,
     direccion: formData.get("direccion"),
   });
   if (!clientParsed.success) {
