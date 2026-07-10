@@ -4,16 +4,19 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
+  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import { formatQuetzales } from "@/lib/format";
 
 const RETRO_RUST = "#c24e2a";
+const GOLDEN_HOUR = "#a9791f";
 const DEEP_GROVE_MUTED = "#1e2a2299";
 
-type MonthPoint = { mes: Date; cantidad: number };
+type MonthPoint = { mes: Date; ventas: number; ganancia: number };
 
 const MESES_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -25,23 +28,29 @@ function formatMonth(date: Date) {
   return `${MESES_ES[d.getUTCMonth()]} ${String(d.getUTCFullYear()).slice(-2)}`;
 }
 
-export function ProductsPerMonthChart({ data }: { data: MonthPoint[] }) {
+const SERIES_LABELS: Record<string, string> = {
+  ventas: "Ventas",
+  ganancia: "Ganancia",
+};
+
+export function MonthlySalesChart({ data }: { data: MonthPoint[] }) {
   if (data.length === 0) {
     return (
       <p className="py-12 text-center text-sm text-deep-grove/50">
-        Todavía no hay suficientes datos para mostrar esta gráfica.
+        Todavía no hay ventas registradas.
       </p>
     );
   }
 
   const chartData = data.map((d) => ({
     mesLabel: formatMonth(d.mes),
-    cantidad: d.cantidad,
+    ventas: d.ventas,
+    ganancia: d.ganancia,
   }));
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <BarChart data={chartData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height={280}>
+      <BarChart data={chartData} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
         <CartesianGrid vertical={false} stroke="#1e2a221a" />
         <XAxis
           dataKey="mesLabel"
@@ -50,11 +59,11 @@ export function ProductsPerMonthChart({ data }: { data: MonthPoint[] }) {
           tick={{ fill: DEEP_GROVE_MUTED, fontSize: 12 }}
         />
         <YAxis
-          allowDecimals={false}
           tickLine={false}
           axisLine={false}
           tick={{ fill: DEEP_GROVE_MUTED, fontSize: 12 }}
-          width={28}
+          width={60}
+          tickFormatter={(value) => `Q${value}`}
         />
         <Tooltip
           cursor={{ fill: "#1e2a220d" }}
@@ -63,9 +72,17 @@ export function ProductsPerMonthChart({ data }: { data: MonthPoint[] }) {
             border: "1px solid #1e2a221a",
             fontSize: 13,
           }}
-          formatter={(value) => [String(value), "Vinilos agregados"]}
+          formatter={(value, name) => [
+            formatQuetzales(Number(value)),
+            SERIES_LABELS[String(name)] ?? String(name),
+          ]}
         />
-        <Bar dataKey="cantidad" fill={RETRO_RUST} radius={[4, 4, 0, 0]} maxBarSize={40} />
+        <Legend
+          formatter={(value) => SERIES_LABELS[value] ?? value}
+          wrapperStyle={{ fontSize: 12.5, color: DEEP_GROVE_MUTED }}
+        />
+        <Bar dataKey="ventas" fill={RETRO_RUST} radius={[4, 4, 0, 0]} maxBarSize={28} />
+        <Bar dataKey="ganancia" fill={GOLDEN_HOUR} radius={[4, 4, 0, 0]} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );

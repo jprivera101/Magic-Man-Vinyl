@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getProductById } from "@/lib/products";
+import { getProductById, getProductCost } from "@/lib/products";
 import { ProductForm } from "../../ProductForm";
 import { updateProductAction } from "../../actions";
 
@@ -12,7 +12,7 @@ export default async function EditarProductoPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const product = await getProductById(id);
+  const [product, cost] = await Promise.all([getProductById(id), getProductCost(id)]);
 
   if (!product) {
     notFound();
@@ -27,7 +27,11 @@ export default async function EditarProductoPage({
       </h1>
       <ProductForm
         action={boundAction}
-        product={{ ...product, price: product.price.toString() }}
+        product={{
+          ...product,
+          price: product.price.toString(),
+          cost: cost !== null ? String(cost) : "",
+        }}
         submitLabel="Guardar cambios"
       />
     </div>

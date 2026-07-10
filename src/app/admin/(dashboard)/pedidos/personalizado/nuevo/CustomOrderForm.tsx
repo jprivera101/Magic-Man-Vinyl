@@ -12,6 +12,7 @@ type Item = {
   artist: string;
   album: string;
   price: string;
+  cost: string;
   file: File | null;
   preview: string | null;
 };
@@ -22,6 +23,7 @@ function newItem(): Item {
     artist: "",
     album: "",
     price: "",
+    cost: "",
     file: null,
     preview: null,
   };
@@ -56,7 +58,9 @@ export function CustomOrderForm() {
     const formData = new FormData(e.currentTarget);
     formData.set(
       "items",
-      JSON.stringify(items.map((i) => ({ artist: i.artist, album: i.album, price: i.price }))),
+      JSON.stringify(
+        items.map((i) => ({ artist: i.artist, album: i.album, price: i.price, cost: i.cost })),
+      ),
     );
     items.forEach((item, idx) => {
       if (item.file) formData.set(`image-${idx}`, item.file);
@@ -213,7 +217,16 @@ export function CustomOrderForm() {
                   placeholder="Precio (Q)"
                   value={item.price}
                   onChange={(e) => updateItem(item.key, { price: e.target.value })}
-                  className="col-span-2 rounded-lg border border-deep-grove/20 bg-white px-3 py-2 text-sm text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
+                  className="rounded-lg border border-deep-grove/20 bg-white px-3 py-2 text-sm text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Costo (Q) — solo tú"
+                  value={item.cost}
+                  onChange={(e) => updateItem(item.key, { cost: e.target.value })}
+                  className="rounded-lg border border-deep-grove/20 bg-white px-3 py-2 text-sm text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
                 />
               </div>
 

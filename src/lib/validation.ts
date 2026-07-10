@@ -14,6 +14,12 @@ export const productSchema = z.object({
     .number({ message: "El precio debe ser un número" })
     .positive("El precio debe ser mayor a 0")
     .max(100000, "Ese precio parece demasiado alto"),
+  cost: z.coerce
+    .number({ message: "El costo debe ser un número" })
+    .min(0, "El costo no puede ser negativo")
+    .max(100000, "Ese costo parece demasiado alto")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   genre: z
     .string()
     .trim()
@@ -142,6 +148,12 @@ export const customOrderItemSchema = z.object({
     .number({ message: "El precio debe ser un número" })
     .positive("El precio debe ser mayor a 0")
     .max(100000, "Ese precio parece demasiado alto"),
+  cost: z.coerce
+    .number({ message: "El costo debe ser un número" })
+    .min(0, "El costo no puede ser negativo")
+    .max(100000, "Ese costo parece demasiado alto")
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export const customOrderItemsSchema = z
@@ -160,10 +172,17 @@ export const customOrderEditSchema = z.object({
     .array(
       z.object({
         id: z.string().min(1),
+        productId: z.string().min(1),
         price: z.coerce
           .number({ message: "El precio debe ser un número" })
           .positive("El precio debe ser mayor a 0")
           .max(100000, "Ese precio parece demasiado alto"),
+        cost: z.coerce
+          .number({ message: "El costo debe ser un número" })
+          .min(0, "El costo no puede ser negativo")
+          .max(100000, "Ese costo parece demasiado alto")
+          .optional()
+          .or(z.literal("").transform(() => undefined)),
       }),
     )
     .min(1, "Faltan los vinilos del pedido"),

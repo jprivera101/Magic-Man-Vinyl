@@ -26,7 +26,9 @@ export async function updateCustomOrderAction(
     direccion: formData.get("direccion"),
     items: order.items.map((item) => ({
       id: item.id,
+      productId: item.productId,
       price: formData.get(`price-${item.id}`),
+      cost: formData.get(`cost-${item.id}`) || undefined,
     })),
   });
 

@@ -67,7 +67,7 @@ export async function lookupByArtistAlbum(
     const [lastLog, sold] = await Promise.all([
       prisma.priceLog.findFirst({ where: { sku: existing.sku }, orderBy: { createdAt: "desc" } }),
       prisma.orderItem.aggregate({
-        where: { product: { sku: existing.sku }, order: { status: { in: ["CONFIRMADO", "ENVIADO"] } } },
+        where: { product: { sku: existing.sku }, order: { status: { in: ["CONFIRMADO", "EN_TRANSITO", "EN_GUATEMALA", "ENVIADO"] } } },
         _sum: { quantity: true },
       }),
     ]);
@@ -121,7 +121,7 @@ export async function getSkuReport(): Promise<SkuReportRow[]> {
       });
 
       const sold = await prisma.orderItem.aggregate({
-        where: { product: { sku }, order: { status: { in: ["CONFIRMADO", "ENVIADO"] } } },
+        where: { product: { sku }, order: { status: { in: ["CONFIRMADO", "EN_TRANSITO", "EN_GUATEMALA", "ENVIADO"] } } },
         _sum: { quantity: true },
       });
       const totalSold = sold._sum.quantity ?? 0;

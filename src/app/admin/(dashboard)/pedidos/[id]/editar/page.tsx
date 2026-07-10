@@ -38,8 +38,9 @@ export default async function EditarPedidoPage({
         Editar orden {order.codigo}
       </h1>
       <p className="mb-6 text-sm text-deep-grove/60">
-        Solo puedes ajustar el precio de cada vinilo y la dirección de envío
-        — el cliente, teléfono, correo, artista y álbum quedan fijos.
+        Solo puedes ajustar el precio, el costo (solo tú lo ves) y la
+        dirección de envío — el cliente, teléfono, correo, artista y álbum
+        quedan fijos.
       </p>
       <CustomOrderEditForm
         action={boundAction}
@@ -47,6 +48,7 @@ export default async function EditarPedidoPage({
         items={order.items.map((item) => ({
           id: item.id,
           price: item.price.toString(),
+          cost: item.product.cost !== null ? item.product.cost.toString() : "",
           artist: item.product.artist,
           album: item.product.album,
           imageUrl: item.product.imageUrl,

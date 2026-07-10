@@ -20,7 +20,9 @@ export const SORT_OPTIONS = {
 
 export type SortOption = keyof typeof SORT_OPTIONS;
 
-export type ProductWithAvailability = Product & {
+// `cost` is admin-only and deliberately excluded here — every public-facing
+// page and client component gets this type, so it must never carry cost.
+export type ProductWithAvailability = Omit<Product, "cost"> & {
   availableUnits: number;
   effectivePrice: number;
   activePromotion: ActivePromotion | null;
@@ -66,7 +68,8 @@ async function getProductsWithAvailability(): Promise<ProductWithAvailability[]>
     getActivePromotionsMap(),
   ]);
 
-  return products.map(({ orderItems, ...product }) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
+  return products.map(({ orderItems, cost: _cost, ...product }) => {
     const activePromotion = promotions.get(product.id) ?? null;
     return {
       ...product,
@@ -115,7 +118,8 @@ export async function getProductById(
     getActivePromotionForProduct(id),
   ]);
   if (!product) return null;
-  const { orderItems, ...rest } = product;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
+  const { orderItems, cost: _cost, ...rest } = product;
   const reserved = orderItems.reduce((sum, item) => sum + item.quantity, 0);
   return {
     ...rest,
@@ -140,6 +144,37 @@ export async function getAllProductsForAdmin(): Promise<ProductWithAvailability[
   return products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 }
 
+/** Admin-only: el costo nunca viaja con ProductWithAvailability, así que se trae aparte. */
+export async function getProductCost(id: string): Promise<number | null> {
+  const product = await prisma.product.findUnique({ where: { id }, select: { cost: true } });
+  return product?.cost != null ? Number(product.cost) : null;
+}
+
+export type SlowMover = {
+  id: string;
+  artist: string;
+  album: string;
+  imageUrl: string;
+  daysInInventory: number;
+};
+
+/** Vinilos reales (no personalizados) todavía en inventario, del más antiguo al más nuevo. */
+export async function getSlowMovers(limit = 3): Promise<SlowMover[]> {
+  const products = await getProductsWithAvailability();
+  const now = Date.now();
+  return products
+    .filter((p) => p.availableUnits > 0)
+    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .slice(0, limit)
+    .map((p) => ({
+      id: p.id,
+      artist: p.artist,
+      album: p.album,
+      imageUrl: p.imageUrl,
+      daysInInventory: Math.floor((now - p.createdAt.getTime()) / 86_400_000),
+    }));
+}
+
 export async function createProduct(data: ProductInput & { imageUrl: string }) {
   const sku = await resolveSkuForNewProduct(data.artist, data.album);
   const product = await prisma.product.create({ data: { ...data, sku } });
@@ -149,7 +184,7 @@ export async function createProduct(data: ProductInput & { imageUrl: string }) {
 
 export async function updateProduct(
   id: string,
-  data: ProductInput & { imageUrl?: string },
+  data: Omit<ProductInput, "cost"> & { imageUrl?: string; cost?: number | null },
 ) {
   // El SKU no se edita aquí: queda fijo al producto desde que se creó.
   const product = await prisma.product.update({ where: { id }, data });
@@ -181,7 +216,8 @@ export async function getProductAnalytics() {
     prisma.product.count({ where: { isCustom: false } }),
     prisma.product.aggregate({ where: { isCustom: false }, _sum: { units: true } }),
     prisma.$queryRaw<{ mes: Date; cantidad: bigint }[]>`
-      SELECT date_trunc('month', "createdAt") AS mes, COUNT(*) AS cantidad
+      SELECT date_trunc('month', "createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS mes,
+             COUNT(*) AS cantidad
       FROM "Product"
       WHERE "isCustom" = false
       GROUP BY mes

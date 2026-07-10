@@ -65,8 +65,8 @@ export default async function AdminDashboardPage() {
           icon={Archive}
         />
         <StatCard
-          label="Vendidos"
-          value={String(orderStats.confirmados + orderStats.enviados)}
+          label="Vinilos vendidos"
+          value={String(orderStats.vendidosUnidades)}
           icon={PackageCheck}
         />
         <StatCard

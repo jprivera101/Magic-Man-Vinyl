@@ -10,7 +10,7 @@ import { CONDICIONES_VINILO } from "@/lib/validation";
 import { formatQuetzales } from "@/lib/format";
 import type { ProductWithAvailability } from "@/lib/products";
 import type { ProductLookup } from "@/lib/sku";
-import { PackageSearch, Sparkles, Lock } from "lucide-react";
+import { PackageSearch, Sparkles, Lock, EyeOff } from "lucide-react";
 
 type ProductAction = (
   prevState: ProductFormState,
@@ -18,9 +18,11 @@ type ProductAction = (
 ) => Promise<ProductFormState>;
 
 // Prisma's Decimal can't cross the server->client boundary, so callers must
-// serialize price to a string first.
+// serialize price to a string first. `cost` isn't part of ProductWithAvailability
+// (it's stripped from every public-facing type), so it's added back explicitly here.
 export type SerializedProduct = Omit<ProductWithAvailability, "price"> & {
   price: string;
+  cost?: string;
 };
 
 const initialState: ProductFormState = {};
@@ -203,6 +205,28 @@ export function ProductForm({
             </p>
           )}
         </label>
+      </div>
+
+      <div className="rounded-xl bg-golden-hour/10 p-4">
+        <label className="block">
+          <span className="mb-1.5 flex items-center gap-1.5 text-sm font-semibold text-deep-grove">
+            <EyeOff size={14} />
+            Costo (Q) <span className="font-normal text-deep-grove/50">(opcional)</span>
+          </span>
+          <input
+            type="number"
+            name="cost"
+            step="0.01"
+            min="0"
+            defaultValue={product?.cost ?? ""}
+            placeholder="Lo que te costó a ti"
+            className="w-full max-w-xs rounded-xl border border-deep-grove/20 bg-white px-4 py-3 text-base text-deep-grove shadow-sm focus:border-retro-rust focus:outline-none focus:ring-1 focus:ring-retro-rust"
+          />
+        </label>
+        <p className="mt-1.5 text-xs text-deep-grove/60">
+          Solo tú lo ves — nunca aparece en el catálogo ni con los clientes. Se
+          usa para calcular tu ganancia en Finanzas.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

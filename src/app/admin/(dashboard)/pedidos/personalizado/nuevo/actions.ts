@@ -35,7 +35,7 @@ export async function createCustomOrderAction(
     return { error: itemsParsed.error.issues[0]?.message ?? "Revisa los vinilos." };
   }
 
-  const items: { artist: string; album: string; price: number; imageUrl: string }[] = [];
+  const items: { artist: string; album: string; price: number; cost?: number; imageUrl: string }[] = [];
   for (let i = 0; i < itemsParsed.data.length; i++) {
     const item = itemsParsed.data[i];
     const file = formData.get(`image-${i}`);

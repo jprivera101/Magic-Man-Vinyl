@@ -29,6 +29,7 @@ model Product {
   artist     String
   album      String
   price      Decimal     @db.Decimal(10, 2)
+  cost       Decimal?    @db.Decimal(10, 2)
   imageUrl   String
   genre      String?
   year       Int?

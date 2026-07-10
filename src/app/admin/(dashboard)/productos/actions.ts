@@ -20,6 +20,7 @@ function parseProductForm(formData: FormData) {
     artist: formData.get("artist"),
     album: formData.get("album"),
     price: formData.get("price"),
+    cost: formData.get("cost") || undefined,
     genre: formData.get("genre") || undefined,
     year: formData.get("year") || undefined,
     condition: formData.get("condition") || undefined,
@@ -79,8 +80,11 @@ export async function updateProductAction(
 
   // El artista, álbum y foto no se editan aquí — son parte del SKU y quedan
   // fijos desde que se creó el producto, sin importar lo que venga en el form.
+  // El costo sí se puede borrar por completo (a diferencia de género/año/
+  // estado): dejarlo vacío lo pone en null en vez de dejar el valor anterior.
   await updateProduct(id, {
     ...parsed.data,
+    cost: parsed.data.cost ?? null,
     artist: existing.artist,
     album: existing.album,
     imageUrl: existing.imageUrl,

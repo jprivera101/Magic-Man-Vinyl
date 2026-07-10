@@ -10,7 +10,7 @@ export async function getTopArtists(limit = 5): Promise<TopArtist[]> {
     FROM "OrderItem" oi
     JOIN "Product" p ON p.id = oi."productId"
     JOIN "Order" o ON o.id = oi."orderId"
-    WHERE o.status IN ('CONFIRMADO', 'ENVIADO')
+    WHERE o.status IN ('CONFIRMADO', 'EN_TRANSITO', 'EN_GUATEMALA', 'ENVIADO')
     GROUP BY p.artist
     ORDER BY unidades DESC
     LIMIT ${limit}
@@ -33,7 +33,7 @@ export async function getTopClients(limit = 3): Promise<TopClient[]> {
     SELECT o."clientId" AS "clientId", c.nombre AS nombre, c.apellido AS apellido, COUNT(*) AS total
     FROM "Order" o
     JOIN "Client" c ON c.id = o."clientId"
-    WHERE o."clientId" IS NOT NULL AND o.status IN ('CONFIRMADO', 'ENVIADO')
+    WHERE o."clientId" IS NOT NULL AND o.status IN ('CONFIRMADO', 'EN_TRANSITO', 'EN_GUATEMALA', 'ENVIADO')
     GROUP BY o."clientId", c.nombre, c.apellido
     ORDER BY total DESC
     LIMIT ${limit}

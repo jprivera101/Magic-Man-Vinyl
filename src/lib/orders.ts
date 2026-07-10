@@ -7,6 +7,9 @@ import type { $Enums } from "@/generated/prisma/client";
 
 export class OrderError extends Error {}
 
+/** Estados donde la venta ya está comprometida (pago confirmado) — usados para reportes de ventas/ganancia. */
+export const SOLD_STATUSES = ["CONFIRMADO", "EN_TRANSITO", "EN_GUATEMALA", "ENVIADO"] as const;
+
 function randomDigits(n: number): string {
   let s = "";
   for (let i = 0; i < n; i++) s += Math.floor(Math.random() * 10);
@@ -214,7 +217,7 @@ export async function createCustomOrder(data: {
   telefono?: string;
   email?: string;
   direccion: string;
-  items: { artist: string; album: string; price: number; imageUrl: string }[];
+  items: { artist: string; album: string; price: number; cost?: number; imageUrl: string }[];
 }) {
   const { items, ...customer } = data;
 
@@ -232,6 +235,7 @@ export async function createCustomOrder(data: {
           artist: item.artist,
           album: item.album,
           price: item.price,
+          cost: item.cost,
           imageUrl: item.imageUrl,
           sku: "CUSTOM",
           units: 1,
@@ -247,10 +251,13 @@ export async function createCustomOrder(data: {
   });
 }
 
-/** Edición limitada de un pedido personalizado: solo dirección y precio por vinilo. */
+/** Edición limitada de un pedido personalizado: precio y costo por vinilo, y dirección de envío. */
 export async function updateCustomOrderDetails(
   orderId: number,
-  data: { direccion: string; items: { id: string; price: number }[] },
+  data: {
+    direccion: string;
+    items: { id: string; productId: string; price: number; cost?: number }[];
+  },
 ) {
   return prisma.$transaction(async (tx) => {
     await tx.order.update({ where: { id: orderId }, data: { direccion: data.direccion } });
@@ -258,6 +265,10 @@ export async function updateCustomOrderDetails(
       await tx.orderItem.updateMany({
         where: { id: item.id, orderId },
         data: { price: item.price },
+      });
+      await tx.product.updateMany({
+        where: { id: item.productId },
+        data: { cost: item.cost ?? null },
       });
     }
     return tx.order.findUniqueOrThrow({ where: { id: orderId }, include: ORDER_INCLUDE });
@@ -318,21 +329,63 @@ export async function trackOrder(codigo: string, contacto: string) {
 }
 
 export async function getOrderStats() {
-  const [pendientes, confirmados, enviados, rechazados] = await Promise.all([
+  const [pendientes, confirmados, enviados, rechazados, ventasItems] = await Promise.all([
     prisma.order.count({ where: { status: "PENDIENTE" } }),
     prisma.order.count({ where: { status: "CONFIRMADO" } }),
     prisma.order.count({ where: { status: "ENVIADO" } }),
     prisma.order.count({ where: { status: "RECHAZADO" } }),
+    prisma.orderItem.findMany({
+      where: { order: { status: { in: [...SOLD_STATUSES] } } },
+      select: { price: true, quantity: true },
+    }),
   ]);
 
-  const ventas = await prisma.orderItem.findMany({
-    where: { order: { status: { in: ["CONFIRMADO", "ENVIADO"] } } },
-  });
-
-  const totalVentas = ventas.reduce(
+  const totalVentas = ventasItems.reduce(
     (sum, item) => sum + Number(item.price) * item.quantity,
     0,
   );
+  // Cuenta vinilos vendidos (suma de cantidades), no número de pedidos —
+  // un solo pedido personalizado puede traer varios vinilos.
+  const vendidosUnidades = ventasItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  return { pendientes, confirmados, enviados, rechazados, totalVentas };
+  return { pendientes, confirmados, enviados, rechazados, totalVentas, vendidosUnidades };
+}
+
+export type MonthlySales = { mes: Date; ventas: number; ganancia: number };
+
+/** Ventas y ganancia por mes — la ganancia solo suma vinilos con costo registrado. */
+export async function getMonthlySales(): Promise<MonthlySales[]> {
+  const rows = await prisma.$queryRaw<{ mes: Date; ventas: string; ganancia: string }[]>`
+    SELECT date_trunc('month', o."createdAt" AT TIME ZONE 'UTC' AT TIME ZONE 'America/Guatemala') AS mes,
+           SUM(oi.price * oi.quantity) AS ventas,
+           SUM(CASE WHEN p.cost IS NOT NULL THEN (oi.price - p.cost) * oi.quantity ELSE 0 END) AS ganancia
+    FROM "OrderItem" oi
+    JOIN "Order" o ON o.id = oi."orderId"
+    JOIN "Product" p ON p.id = oi."productId"
+    WHERE o.status IN ('CONFIRMADO', 'EN_TRANSITO', 'EN_GUATEMALA', 'ENVIADO')
+    GROUP BY mes
+    ORDER BY mes ASC
+  `;
+  return rows.map((r) => ({ mes: r.mes, ventas: Number(r.ventas), ganancia: Number(r.ganancia) }));
+}
+
+/** Resumen para la página de Finanzas: serie mensual + totales de este mes y de siempre. */
+export async function getCurrentMonthSummary() {
+  const monthly = await getMonthlySales();
+  // `mes` ya representa el mes calendario de Guatemala (ver getMonthlySales),
+  // así que "ahora" se desplaza al mismo huso (UTC-6, sin horario de verano) antes de comparar.
+  const nowGuatemala = new Date(Date.now() - 6 * 60 * 60 * 1000);
+  const current = monthly.find(
+    (m) =>
+      m.mes.getUTCFullYear() === nowGuatemala.getUTCFullYear() &&
+      m.mes.getUTCMonth() === nowGuatemala.getUTCMonth(),
+  );
+
+  return {
+    monthly,
+    esteMesVentas: current?.ventas ?? 0,
+    esteMesGanancia: current?.ganancia ?? 0,
+    totalVentas: monthly.reduce((sum, m) => sum + m.ventas, 0),
+    totalGanancia: monthly.reduce((sum, m) => sum + m.ganancia, 0),
+  };
 }
