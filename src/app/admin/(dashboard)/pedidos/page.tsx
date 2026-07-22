@@ -10,8 +10,8 @@ export const metadata = { title: "Pedidos | Admin" };
 export const dynamic = "force-dynamic";
 
 const TABS: { value: $Enums.OrderStatus | "TODOS"; label: string }[] = [
-  { value: "TODOS", label: "Todos" },
   { value: "PENDIENTE", label: "Pendientes" },
+  { value: "TODOS", label: "Todos" },
   { value: "CONFIRMADO", label: "Confirmados" },
   { value: "ENVIADO", label: "Enviados" },
   { value: "ENTREGADO", label: "Entregados" },
@@ -26,7 +26,7 @@ export default async function PedidosAdminPage({
   const { estado } = await searchParams;
   const activeTab = TABS.some((t) => t.value === estado)
     ? (estado as $Enums.OrderStatus | "TODOS")
-    : "TODOS";
+    : "PENDIENTE";
 
   const orders = await getOrders(
     activeTab === "TODOS" ? undefined : activeTab,
@@ -49,7 +49,7 @@ export default async function PedidosAdminPage({
         {TABS.map((tab) => (
           <Link
             key={tab.value}
-            href={tab.value === "TODOS" ? "/admin/pedidos" : `/admin/pedidos?estado=${tab.value}`}
+            href={tab.value === "PENDIENTE" ? "/admin/pedidos" : `/admin/pedidos?estado=${tab.value}`}
             className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition ${
               activeTab === tab.value
                 ? "bg-deep-grove text-vintage-cream"

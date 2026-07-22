@@ -10,8 +10,8 @@ export const metadata = { title: "Pedidos personalizados | Admin" };
 export const dynamic = "force-dynamic";
 
 const TABS: { value: $Enums.OrderStatus | "TODOS"; label: string }[] = [
-  { value: "TODOS", label: "Todos" },
   { value: "PENDIENTE", label: "Pendientes" },
+  { value: "TODOS", label: "Todos" },
   { value: "CONFIRMADO", label: "Pago parcial" },
   { value: "EN_TRANSITO", label: "En tránsito" },
   { value: "EN_GUATEMALA", label: "En Guatemala" },
@@ -28,7 +28,7 @@ export default async function PedidosPersonalizadoPage({
   const { estado } = await searchParams;
   const activeTab = TABS.some((t) => t.value === estado)
     ? (estado as $Enums.OrderStatus | "TODOS")
-    : "TODOS";
+    : "PENDIENTE";
 
   const orders = await getCustomOrders(
     activeTab === "TODOS" ? undefined : activeTab,
@@ -59,7 +59,7 @@ export default async function PedidosPersonalizadoPage({
           <Link
             key={tab.value}
             href={
-              tab.value === "TODOS"
+              tab.value === "PENDIENTE"
                 ? "/admin/pedidos/personalizado"
                 : `/admin/pedidos/personalizado?estado=${tab.value}`
             }
