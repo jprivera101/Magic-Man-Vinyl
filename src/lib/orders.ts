@@ -8,7 +8,7 @@ import type { $Enums } from "@/generated/prisma/client";
 export class OrderError extends Error {}
 
 /** Estados donde la venta ya está comprometida (pago confirmado) — usados para reportes de ventas/ganancia. */
-export const SOLD_STATUSES = ["CONFIRMADO", "EN_TRANSITO", "EN_GUATEMALA", "ENVIADO"] as const;
+export const SOLD_STATUSES = ["CONFIRMADO", "EN_TRANSITO", "EN_GUATEMALA", "ENVIADO", "ENTREGADO"] as const;
 
 function randomDigits(n: number): string {
   let s = "";
@@ -169,11 +169,13 @@ export async function createOrder(
 export async function getOrders(status?: $Enums.OrderStatus) {
   return prisma.order.findMany({
     where: {
-      ...(status ? { status } : {}),
+      // Sin filtro explícito, los entregados quedan fuera de la vista por defecto
+      // (ya están cerrados) — solo aparecen si se elige la pestaña "Entregados".
+      ...(status ? { status } : { status: { not: "ENTREGADO" } }),
       items: { none: { product: { isCustom: true } } },
     },
     include: ORDER_INCLUDE,
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 }
 
@@ -181,11 +183,11 @@ export async function getOrders(status?: $Enums.OrderStatus) {
 export async function getCustomOrders(status?: $Enums.OrderStatus) {
   return prisma.order.findMany({
     where: {
-      ...(status ? { status } : {}),
+      ...(status ? { status } : { status: { not: "ENTREGADO" } }),
       items: { some: { product: { isCustom: true } } },
     },
     include: ORDER_INCLUDE,
-    orderBy: { createdAt: "desc" },
+    orderBy: { createdAt: "asc" },
   });
 }
 
@@ -362,7 +364,7 @@ export async function getMonthlySales(): Promise<MonthlySales[]> {
     FROM "OrderItem" oi
     JOIN "Order" o ON o.id = oi."orderId"
     JOIN "Product" p ON p.id = oi."productId"
-    WHERE o.status IN ('CONFIRMADO', 'EN_TRANSITO', 'EN_GUATEMALA', 'ENVIADO')
+    WHERE o.status IN ('CONFIRMADO', 'EN_TRANSITO', 'EN_GUATEMALA', 'ENVIADO', 'ENTREGADO')
     GROUP BY mes
     ORDER BY mes ASC
   `;

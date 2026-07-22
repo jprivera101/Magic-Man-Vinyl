@@ -14,6 +14,7 @@ const TABS: { value: $Enums.OrderStatus | "TODOS"; label: string }[] = [
   { value: "PENDIENTE", label: "Pendientes" },
   { value: "CONFIRMADO", label: "Confirmados" },
   { value: "ENVIADO", label: "Enviados" },
+  { value: "ENTREGADO", label: "Entregados" },
   { value: "RECHAZADO", label: "Rechazados" },
 ];
 

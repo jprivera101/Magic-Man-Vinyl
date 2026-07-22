@@ -16,6 +16,7 @@ const TABS: { value: $Enums.OrderStatus | "TODOS"; label: string }[] = [
   { value: "EN_TRANSITO", label: "En tránsito" },
   { value: "EN_GUATEMALA", label: "En Guatemala" },
   { value: "ENVIADO", label: "Enviados" },
+  { value: "ENTREGADO", label: "Entregados" },
   { value: "RECHAZADO", label: "Rechazados" },
 ];
 

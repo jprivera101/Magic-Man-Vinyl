@@ -1,4 +1,4 @@
-import { Truck, Plane, MapPin } from "lucide-react";
+import { Truck, Plane, MapPin, CheckCircle2 } from "lucide-react";
 import type { $Enums } from "@/generated/prisma/client";
 
 const ORDER_LABELS: Record<$Enums.OrderStatus, string> = {
@@ -7,6 +7,7 @@ const ORDER_LABELS: Record<$Enums.OrderStatus, string> = {
   EN_TRANSITO: "En tránsito",
   EN_GUATEMALA: "En Guatemala",
   ENVIADO: "Enviado",
+  ENTREGADO: "Entregado",
   RECHAZADO: "Rechazado",
 };
 
@@ -16,6 +17,7 @@ const ORDER_STYLES: Record<$Enums.OrderStatus, string> = {
   EN_TRANSITO: "bg-sky-100 text-sky-700",
   EN_GUATEMALA: "bg-golden-hour/25 text-golden-hour-dark",
   ENVIADO: "bg-emerald-100 text-emerald-700",
+  ENTREGADO: "bg-deep-grove/10 text-deep-grove",
   RECHAZADO: "bg-retro-rust/10 text-retro-rust-dark",
 };
 
@@ -54,6 +56,7 @@ export function OrderStatusBadge({
       {status === "EN_TRANSITO" && <Plane size={12} strokeWidth={2.5} />}
       {status === "EN_GUATEMALA" && <MapPin size={12} strokeWidth={2.5} />}
       {status === "ENVIADO" && <Truck size={12} strokeWidth={2.5} />}
+      {status === "ENTREGADO" && <CheckCircle2 size={12} strokeWidth={2.5} />}
       {label ?? ORDER_LABELS[status]}
     </span>
   );

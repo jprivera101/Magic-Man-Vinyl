@@ -140,5 +140,20 @@ export function OrderStatusActions({
     );
   }
 
+  if (status === "ENVIADO") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={isPending}
+          onClick={() => apply("ENTREGADO")}
+          className="rounded-full bg-deep-grove px-4 py-2.5 text-sm font-semibold text-vintage-cream transition hover:bg-deep-grove-light disabled:opacity-50"
+        >
+          Marcar como entregado
+        </button>
+      </div>
+    );
+  }
+
   return null;
 }

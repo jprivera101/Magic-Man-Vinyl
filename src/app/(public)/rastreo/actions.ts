@@ -30,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
   EN_TRANSITO: "En camino desde el extranjero",
   EN_GUATEMALA: "Llegó a Guatemala — preparando entrega",
   ENVIADO: "Enviado",
+  ENTREGADO: "Entregado",
   RECHAZADO: "Rechazado",
 };
 

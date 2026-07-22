@@ -15,6 +15,7 @@ enum OrderStatus {
   EN_TRANSITO
   EN_GUATEMALA
   ENVIADO
+  ENTREGADO
   RECHAZADO
 }
 

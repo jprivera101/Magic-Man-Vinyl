@@ -26,11 +26,11 @@ export default async function PedidoDetallePage({
   return (
     <div className="max-w-2xl">
       <Link
-        href="/admin/pedidos"
+        href={isCustom ? "/admin/pedidos/personalizado" : "/admin/pedidos"}
         className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-deep-grove/60 hover:text-deep-grove"
       >
         <ArrowLeft size={16} />
-        Volver a pedidos
+        {isCustom ? "Volver a personalizados" : "Volver a pedidos"}
       </Link>
 
       <div className="flex items-center justify-between">
