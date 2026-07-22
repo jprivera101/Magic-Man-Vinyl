@@ -20,6 +20,7 @@ export type TrackResult = {
   total: string;
   createdAt: string;
   rejectionReason?: string;
+  delivered?: boolean;
 };
 
 export type TrackFormState = { error?: string; result?: TrackResult };
@@ -55,6 +56,20 @@ export async function trackOrderAction(
     return {
       error:
         "No encontramos un pedido con ese código y ese teléfono/correo. Verifica los datos.",
+    };
+  }
+
+  if (order.status === "ENTREGADO") {
+    return {
+      result: {
+        codigo: order.codigo,
+        status: STATUS_LABELS.ENTREGADO,
+        statusRaw: order.status,
+        items: [],
+        total: "",
+        createdAt: formatFechaHora(order.createdAt),
+        delivered: true,
+      },
     };
   }
 

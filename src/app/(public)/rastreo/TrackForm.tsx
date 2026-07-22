@@ -57,21 +57,32 @@ export function TrackForm() {
               <p className="font-display text-base font-bold">
                 Orden {state.result.codigo}
               </p>
-              <div className="mt-1 flex flex-col gap-0.5">
-                {state.result.items.map((item, i) => (
-                  <p key={i}>
-                    {item.quantity} × {item.artist} — {item.album} ({item.price})
-                  </p>
-                ))}
-              </div>
-              <p className="mt-1 font-semibold">Total: {state.result.total}</p>
-              <div className="mt-2">
-                <OrderStatusBadge status={state.result.statusRaw} label={state.result.status} />
-              </div>
-              {state.result.rejectionReason && (
-                <p className="mt-1 text-retro-rust-dark">
-                  Motivo: {state.result.rejectionReason}
-                </p>
+              {state.result.delivered ? (
+                <>
+                  <div className="mt-2">
+                    <OrderStatusBadge status={state.result.statusRaw} label={state.result.status} />
+                  </div>
+                  <p className="mt-2">Este pedido ya fue entregado. ¡Gracias por tu compra!</p>
+                </>
+              ) : (
+                <>
+                  <div className="mt-1 flex flex-col gap-0.5">
+                    {state.result.items.map((item, i) => (
+                      <p key={i}>
+                        {item.quantity} × {item.artist} — {item.album} ({item.price})
+                      </p>
+                    ))}
+                  </div>
+                  <p className="mt-1 font-semibold">Total: {state.result.total}</p>
+                  <div className="mt-2">
+                    <OrderStatusBadge status={state.result.statusRaw} label={state.result.status} />
+                  </div>
+                  {state.result.rejectionReason && (
+                    <p className="mt-1 text-retro-rust-dark">
+                      Motivo: {state.result.rejectionReason}
+                    </p>
+                  )}
+                </>
               )}
               <p className="mt-1 text-xs text-deep-grove/60">
                 Pedido el {state.result.createdAt}
