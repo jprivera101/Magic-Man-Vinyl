@@ -5,6 +5,7 @@ import { customOrderClientSchema, customOrderItemsSchema } from "@/lib/validatio
 import { createCustomOrder } from "@/lib/orders";
 import { uploadProductImage, UploadError } from "@/lib/storage";
 import { requireAdminSession } from "@/lib/session";
+import { enforceRateLimit, RateLimitError } from "@/lib/rateLimit";
 
 export type CustomOrderResult = { error?: string; orderDbId?: number };
 
@@ -14,6 +15,17 @@ export async function createCustomOrderAction(
   formData: FormData,
 ): Promise<CustomOrderResult> {
   await requireAdminSession();
+
+  // There's only one admin account, so this is a shop-wide cap, not per-IP:
+  // generous enough for a busy afternoon of custom orders for different
+  // clients, but still bounds the damage if the admin session were ever compromised.
+  try {
+    await enforceRateLimit("create-custom-order", "admin", { max: 7, windowMinutes: 180 });
+  } catch (err) {
+    if (err instanceof RateLimitError) return { error: err.message };
+    throw err;
+  }
+
   const clientParsed = customOrderClientSchema.safeParse({
     nombre: formData.get("nombre"),
     apellido: formData.get("apellido"),
