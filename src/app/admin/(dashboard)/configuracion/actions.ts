@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { bankAccountSchema } from "@/lib/validation";
 import { createBankAccount, updateBankAccount, setBankAccountActive } from "@/lib/bankAccounts";
+import { requireAdminSession } from "@/lib/session";
 
 export type BankAccountFormState = { error?: string };
 
@@ -20,6 +21,7 @@ export async function createBankAccountAction(
   prevState: BankAccountFormState,
   formData: FormData,
 ): Promise<BankAccountFormState> {
+  await requireAdminSession();
   const parsed = parse(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
@@ -36,6 +38,7 @@ export async function updateBankAccountAction(
   prevState: BankAccountFormState,
   formData: FormData,
 ): Promise<BankAccountFormState> {
+  await requireAdminSession();
   const parsed = parse(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
@@ -48,6 +51,7 @@ export async function updateBankAccountAction(
 }
 
 export async function toggleBankAccountActiveAction(id: string, active: boolean) {
+  await requireAdminSession();
   await setBankAccountActive(id, active);
   revalidatePath("/admin/configuracion");
   revalidatePath("/pedido");

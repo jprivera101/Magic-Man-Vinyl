@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { customOrderClientSchema, customOrderItemsSchema } from "@/lib/validation";
 import { createCustomOrder } from "@/lib/orders";
 import { uploadProductImage, UploadError } from "@/lib/storage";
+import { requireAdminSession } from "@/lib/session";
 
 export type CustomOrderResult = { error?: string; orderDbId?: number };
 
@@ -12,6 +13,7 @@ const PLACEHOLDER_IMAGE = "/branding/vinyl-placeholder.png";
 export async function createCustomOrderAction(
   formData: FormData,
 ): Promise<CustomOrderResult> {
+  await requireAdminSession();
   const clientParsed = customOrderClientSchema.safeParse({
     nombre: formData.get("nombre"),
     apellido: formData.get("apellido"),

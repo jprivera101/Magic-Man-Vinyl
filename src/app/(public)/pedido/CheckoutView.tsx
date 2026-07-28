@@ -183,6 +183,13 @@ export function CheckoutView({ accounts }: { accounts: BankAccountOption[] }) {
       <form action={formAction} className="flex flex-col gap-5">
         <input type="hidden" name="items" value={itemsJson} />
         <input type="hidden" name="bankAccountId" value={selectedAccount?.id ?? ""} />
+        {/* Honeypot: hidden from real users, but bots that auto-fill every field will trip it. */}
+        <div aria-hidden="true" className="absolute left-[-9999px] top-auto h-0 w-0 overflow-hidden">
+          <label>
+            Empresa
+            <input type="text" name="empresa" tabIndex={-1} autoComplete="off" />
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="block">

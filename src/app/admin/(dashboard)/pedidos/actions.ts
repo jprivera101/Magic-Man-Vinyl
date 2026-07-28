@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { updateOrderStatus } from "@/lib/orders";
+import { requireAdminSession } from "@/lib/session";
 import type { $Enums } from "@/generated/prisma/client";
 
 export async function updateOrderStatusAction(
@@ -9,6 +10,7 @@ export async function updateOrderStatusAction(
   status: $Enums.OrderStatus,
   rejectionReason?: string,
 ) {
+  await requireAdminSession();
   await updateOrderStatus(id, status, rejectionReason);
   revalidatePath("/admin/pedidos");
   revalidatePath(`/admin/pedidos/${id}`);

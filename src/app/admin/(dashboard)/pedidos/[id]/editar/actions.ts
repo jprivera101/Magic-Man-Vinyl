@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { customOrderEditSchema } from "@/lib/validation";
 import { getOrderById, updateCustomOrderDetails } from "@/lib/orders";
+import { requireAdminSession } from "@/lib/session";
 
 export type CustomOrderEditFormState = { error?: string };
 
@@ -12,6 +13,7 @@ export async function updateCustomOrderAction(
   prevState: CustomOrderEditFormState,
   formData: FormData,
 ): Promise<CustomOrderEditFormState> {
+  await requireAdminSession();
   const order = await getOrderById(orderId);
   if (!order) {
     return { error: "Este pedido ya no existe." };

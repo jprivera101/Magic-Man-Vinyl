@@ -1,5 +1,6 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import {
   SESSION_COOKIE_NAME,
   SESSION_MAX_AGE_SECONDS,
@@ -27,4 +28,17 @@ export async function destroyAdminSession() {
 export async function hasValidAdminSession(): Promise<boolean> {
   const cookieStore = await cookies();
   return isValidSessionToken(cookieStore.get(SESSION_COOKIE_NAME)?.value);
+}
+
+/**
+ * Defense-in-depth check for every admin Server Action. The /admin/:path*
+ * middleware only gates page navigations by request path — a Server Action's
+ * function reference can still be invoked directly (via its action ID) from
+ * any path the middleware doesn't cover, so each mutating action must check
+ * the session itself rather than relying solely on the page being gated.
+ */
+export async function requireAdminSession(): Promise<void> {
+  if (!(await hasValidAdminSession())) {
+    redirect("/admin/login");
+  }
 }

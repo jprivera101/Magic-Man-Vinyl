@@ -12,6 +12,7 @@ import {
 import { uploadProductImage, UploadError } from "@/lib/storage";
 import { lookupByArtistAlbum, type ProductLookup } from "@/lib/sku";
 import { createPromotion, endPromotion } from "@/lib/promotions";
+import { requireAdminSession } from "@/lib/session";
 
 export type ProductFormState = { error?: string };
 
@@ -32,6 +33,7 @@ export async function lookupProductAction(
   artist: string,
   album: string,
 ): Promise<ProductLookup | null> {
+  await requireAdminSession();
   return lookupByArtistAlbum(artist, album);
 }
 
@@ -39,6 +41,7 @@ export async function createProductAction(
   prevState: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
+  await requireAdminSession();
   const parsed = parseProductForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Revisa los datos del formulario." };
@@ -68,6 +71,7 @@ export async function updateProductAction(
   prevState: ProductFormState,
   formData: FormData,
 ): Promise<ProductFormState> {
+  await requireAdminSession();
   const parsed = parseProductForm(formData);
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Revisa los datos del formulario." };
@@ -96,6 +100,7 @@ export async function updateProductAction(
 }
 
 export async function deleteProductAction(id: string) {
+  await requireAdminSession();
   await deleteProductById(id);
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");
@@ -106,12 +111,14 @@ export async function createPromotionAction(
   percent: number,
   days: number,
 ) {
+  await requireAdminSession();
   await createPromotion(productId, percent, days);
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");
 }
 
 export async function endPromotionAction(promotionId: string) {
+  await requireAdminSession();
   await endPromotion(promotionId);
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");

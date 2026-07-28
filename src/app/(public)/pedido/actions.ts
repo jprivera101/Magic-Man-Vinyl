@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { orderSchema, cartItemsSchema } from "@/lib/validation";
 import { createOrder, OrderError, lookupClientAddress } from "@/lib/orders";
 import { uploadDepositImage, UploadError } from "@/lib/storage";
+import { enforceRateLimit, getClientIp, RateLimitError } from "@/lib/rateLimit";
+import { notifyNewOrder } from "@/lib/notify";
 
 export type OrderFormState = { error?: string };
 
@@ -25,6 +27,20 @@ export async function submitOrderAction(
   prevState: OrderFormState,
   formData: FormData,
 ): Promise<OrderFormState> {
+  // Honeypot: real customers never fill this field (hidden off-screen); bots that
+  // blindly fill every input do. Reject quietly with a normal-looking error.
+  if (String(formData.get("empresa") ?? "").trim() !== "") {
+    return { error: "No pudimos procesar tu pedido. Intenta de nuevo." };
+  }
+
+  const ip = await getClientIp();
+  try {
+    await enforceRateLimit("submit-order", ip, { max: 5, windowMinutes: 15 });
+  } catch (err) {
+    if (err instanceof RateLimitError) return { error: err.message };
+    throw err;
+  }
+
   let items;
   try {
     items = cartItemsSchema.parse(JSON.parse(String(formData.get("items") ?? "[]")));
@@ -47,6 +63,18 @@ export async function submitOrderAction(
     };
   }
 
+  // Second, tighter cap keyed on the contact info itself — catches an attacker
+  // rotating IPs but still driving orders through the same phone/email.
+  const contactKey = parsed.data.telefono ?? parsed.data.email;
+  if (contactKey) {
+    try {
+      await enforceRateLimit("submit-order-contact", contactKey, { max: 3, windowMinutes: 60 });
+    } catch (err) {
+      if (err instanceof RateLimitError) return { error: err.message };
+      throw err;
+    }
+  }
+
   const file = formData.get("comprobante");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "Debes subir una foto del comprobante de depósito." };
@@ -67,6 +95,8 @@ export async function submitOrderAction(
     if (err instanceof OrderError) return { error: err.message };
     throw err;
   }
+
+  await notifyNewOrder(order);
 
   redirect(`/pedido/gracias?orden=${order.codigo}`);
 }

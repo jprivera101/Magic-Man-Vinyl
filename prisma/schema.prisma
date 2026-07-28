@@ -121,6 +121,16 @@ model OrderItem {
   @@index([productId])
 }
 
+/// Generic per-action/per-key throttle (order submissions, tracking lookups, admin login attempts).
+model RateLimitEvent {
+  id        String   @id @default(cuid())
+  action    String
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([action, key, createdAt])
+}
+
 model BankAccount {
   id           String   @id @default(cuid())
   banco        String

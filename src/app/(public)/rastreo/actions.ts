@@ -3,6 +3,7 @@
 import { trackOrderSchema } from "@/lib/validation";
 import { trackOrder } from "@/lib/orders";
 import { formatFechaHora, formatQuetzales } from "@/lib/format";
+import { enforceRateLimit, getClientIp, RateLimitError } from "@/lib/rateLimit";
 import type { $Enums } from "@/generated/prisma/client";
 
 export type TrackResultItem = {
@@ -39,6 +40,13 @@ export async function trackOrderAction(
   prevState: TrackFormState,
   formData: FormData,
 ): Promise<TrackFormState> {
+  try {
+    await enforceRateLimit("track-order", await getClientIp(), { max: 20, windowMinutes: 15 });
+  } catch (err) {
+    if (err instanceof RateLimitError) return { error: err.message };
+    throw err;
+  }
+
   const parsed = trackOrderSchema.safeParse({
     codigo: formData.get("codigo"),
     contacto: formData.get("contacto"),
