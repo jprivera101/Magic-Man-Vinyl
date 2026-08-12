@@ -29,7 +29,7 @@ export async function submitOrderAction(
 ): Promise<OrderFormState> {
   // Honeypot: real customers never fill this field (hidden off-screen); bots that
   // blindly fill every input do. Reject quietly with a normal-looking error.
-  if (String(formData.get("empresa") ?? "").trim() !== "") {
+  if (String(formData.get("hp_verificacion") ?? "").trim() !== "") {
     return { error: "No pudimos procesar tu pedido. Intenta de nuevo." };
   }
 

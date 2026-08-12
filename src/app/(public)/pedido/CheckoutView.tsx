@@ -183,12 +183,12 @@ export function CheckoutView({ accounts }: { accounts: BankAccountOption[] }) {
       <form action={formAction} className="flex flex-col gap-5">
         <input type="hidden" name="items" value={itemsJson} />
         <input type="hidden" name="bankAccountId" value={selectedAccount?.id ?? ""} />
-        {/* Honeypot: hidden from real users, but bots that auto-fill every field will trip it. */}
+        {/* Honeypot: hidden from real users, but bots that auto-fill every field will trip it.
+            Deliberately no <label> and a name that doesn't match a known autocomplete category
+            (e.g. "empresa"/"company") — browser/password-manager autofill was silently filling
+            that field for real customers, causing legitimate orders to be rejected as bots. */}
         <div aria-hidden="true" className="absolute left-[-9999px] top-auto h-0 w-0 overflow-hidden">
-          <label>
-            Empresa
-            <input type="text" name="empresa" tabIndex={-1} autoComplete="off" />
-          </label>
+          <input type="text" name="hp_verificacion" tabIndex={-1} autoComplete="off" />
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
