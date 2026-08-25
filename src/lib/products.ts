@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache, updateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { deleteProductImage } from "@/lib/storage";
 import { recordPriceIfNeeded, resolveSkuForNewProduct } from "@/lib/sku";
@@ -53,35 +54,54 @@ function sortProducts(
   }
 }
 
-/** Trae todos los productos del catálogo (no personalizados) con disponibilidad y precio con descuento si aplica. */
-async function getProductsWithAvailability(): Promise<ProductWithAvailability[]> {
-  const [products, promotions] = await Promise.all([
-    prisma.product.findMany({
-      where: { isCustom: false },
-      include: {
-        orderItems: {
-          where: { order: { status: { not: "RECHAZADO" } } },
-          select: { quantity: true },
-        },
-      },
-    }),
-    getActivePromotionsMap(),
-  ]);
+const PRODUCTS_CACHE_TAG = "products";
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
-  return products.map(({ orderItems, cost: _cost, ...product }) => {
-    const activePromotion = promotions.get(product.id) ?? null;
-    return {
-      ...product,
-      availableUnits: Math.max(
-        0,
-        product.units - orderItems.reduce((sum, item) => sum + item.quantity, 0),
-      ),
-      effectivePrice: applyDiscount(Number(product.price), activePromotion),
-      activePromotion,
-    };
-  });
+/** Llamar después de cualquier cambio que afecte disponibilidad/precio del catálogo: alta,
+ * edición o borrado de producto, promociones, y pedidos (crear uno reserva unidades; rechazar
+ * uno las libera). Sin esto, el catálogo cacheado se queda mostrando stock/precio viejo.
+ * `updateTag` expira de inmediato (en vez de servir stale-while-revalidate) y solo puede
+ * llamarse desde Server Actions — que es justo donde viven todas estas mutaciones. */
+export function invalidateProductsCache() {
+  updateTag(PRODUCTS_CACHE_TAG);
 }
+
+async function reservedByProductMap(): Promise<Map<string, number>> {
+  const rows = await prisma.orderItem.groupBy({
+    by: ["productId"],
+    where: { order: { status: { not: "RECHAZADO" } } },
+    _sum: { quantity: true },
+  });
+  return new Map(rows.map((row) => [row.productId, row._sum.quantity ?? 0]));
+}
+
+/** Trae todos los productos del catálogo (no personalizados) con disponibilidad y precio con
+ * descuento si aplica. Las unidades reservadas se agregan en SQL (groupBy) en vez de traer cada
+ * order item histórico a JS: con miles de pedidos acumulados, incluir esas filas por producto
+ * crecía sin límite y se volvía la parte más pesada de cada carga del catálogo. Envuelta en
+ * unstable_cache porque antes se re-ejecutaba en cada visita (las páginas de catálogo eran
+ * force-dynamic) — ver invalidateProductsCache para cuándo se refresca. */
+const getProductsWithAvailability = unstable_cache(
+  async (): Promise<ProductWithAvailability[]> => {
+    const [products, reserved, promotions] = await Promise.all([
+      prisma.product.findMany({ where: { isCustom: false } }),
+      reservedByProductMap(),
+      getActivePromotionsMap(),
+    ]);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
+    return products.map(({ cost: _cost, ...product }) => {
+      const activePromotion = promotions.get(product.id) ?? null;
+      return {
+        ...product,
+        availableUnits: Math.max(0, product.units - (reserved.get(product.id) ?? 0)),
+        effectivePrice: applyDiscount(Number(product.price), activePromotion),
+        activePromotion,
+      };
+    });
+  },
+  ["products-with-availability"],
+  { tags: [PRODUCTS_CACHE_TAG], revalidate: 60 },
+);
 
 export async function getAvailableProducts(
   sort: SortOption = "nuevo",
@@ -102,40 +122,66 @@ export async function getAvailableProducts(
   return sortProducts(products, sort);
 }
 
-export async function getProductById(
-  id: string,
-): Promise<ProductWithAvailability | null> {
-  const [product, activePromotion] = await Promise.all([
-    prisma.product.findUnique({
-      where: { id },
-      include: {
-        orderItems: {
-          where: { order: { status: { not: "RECHAZADO" } } },
-          select: { quantity: true },
-        },
-      },
-    }),
-    getActivePromotionForProduct(id),
-  ]);
-  if (!product) return null;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
-  const { orderItems, cost: _cost, ...rest } = product;
-  const reserved = orderItems.reduce((sum, item) => sum + item.quantity, 0);
-  return {
-    ...rest,
-    availableUnits: Math.max(0, product.units - reserved),
-    effectivePrice: applyDiscount(Number(product.price), activePromotion),
-    activePromotion,
-  };
-}
+export const getProductById = unstable_cache(
+  async (id: string): Promise<ProductWithAvailability | null> => {
+    const [product, reservedAgg, activePromotion] = await Promise.all([
+      prisma.product.findUnique({ where: { id } }),
+      prisma.orderItem.aggregate({
+        where: { productId: id, order: { status: { not: "RECHAZADO" } } },
+        _sum: { quantity: true },
+      }),
+      getActivePromotionForProduct(id),
+    ]);
+    if (!product) return null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
+    const { cost: _cost, ...rest } = product;
+    const reserved = reservedAgg._sum.quantity ?? 0;
+    return {
+      ...rest,
+      availableUnits: Math.max(0, product.units - reserved),
+      effectivePrice: applyDiscount(Number(product.price), activePromotion),
+      activePromotion,
+    };
+  },
+  ["product-by-id"],
+  { tags: [PRODUCTS_CACHE_TAG], revalidate: 60 },
+);
 
-/** Trae varios productos por id (para armar el resumen del carrito) sin filtrar por disponibilidad. */
+/** Trae varios productos por id (para armar el resumen del carrito) sin filtrar por disponibilidad.
+ * Consulta solo esos ids en vez de traer todo el catálogo — el carrito nunca trae más de un puñado. */
 export async function getProductsByIds(
   ids: string[],
 ): Promise<ProductWithAvailability[]> {
   if (ids.length === 0) return [];
-  const products = await getProductsWithAvailability();
-  const byId = new Map(products.map((p) => [p.id, p]));
+
+  const [products, reservedRows, promotions] = await Promise.all([
+    prisma.product.findMany({ where: { id: { in: ids }, isCustom: false } }),
+    prisma.orderItem.groupBy({
+      by: ["productId"],
+      where: { productId: { in: ids }, order: { status: { not: "RECHAZADO" } } },
+      _sum: { quantity: true },
+    }),
+    getActivePromotionsMap(),
+  ]);
+
+  const reservedByProduct = new Map(reservedRows.map((row) => [row.productId, row._sum.quantity ?? 0]));
+  const byId = new Map(
+    products.map(({
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructured out to strip admin-only cost
+      cost: _cost,
+      ...product
+    }) => {
+      const activePromotion = promotions.get(product.id) ?? null;
+      const withAvailability: ProductWithAvailability = {
+        ...product,
+        availableUnits: Math.max(0, product.units - (reservedByProduct.get(product.id) ?? 0)),
+        effectivePrice: applyDiscount(Number(product.price), activePromotion),
+        activePromotion,
+      };
+      return [product.id, withAvailability] as const;
+    }),
+  );
+
   return ids.map((id) => byId.get(id)).filter((p): p is ProductWithAvailability => Boolean(p));
 }
 

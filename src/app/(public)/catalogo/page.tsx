@@ -8,8 +8,6 @@ export const metadata = {
   title: "Catálogo | Magic Man Vinyl",
 };
 
-export const dynamic = "force-dynamic";
-
 export default async function CatalogoPage({
   searchParams,
 }: {

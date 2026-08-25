@@ -6,8 +6,6 @@ import { ShippingBadges } from "@/components/ShippingBadges";
 import { AddToCartBar } from "./AddToCartBar";
 import { Flame } from "lucide-react";
 
-export const dynamic = "force-dynamic";
-
 export default async function ProductoPage({
   params,
 }: {

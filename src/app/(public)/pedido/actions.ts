@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { orderSchema, cartItemsSchema } from "@/lib/validation";
 import { createOrder, OrderError, lookupClientAddress } from "@/lib/orders";
+import { invalidateProductsCache } from "@/lib/products";
 import { uploadDepositImage, UploadError } from "@/lib/storage";
 import { enforceRateLimit, getClientIp, RateLimitError } from "@/lib/rateLimit";
 import { notifyNewOrder } from "@/lib/notify";
@@ -96,6 +97,8 @@ export async function submitOrderAction(
     throw err;
   }
 
+  // El pedido recién creado reserva unidades — refleja el nuevo stock de inmediato.
+  invalidateProductsCache();
   await notifyNewOrder(order);
 
   redirect(`/pedido/gracias?orden=${order.codigo}`);

@@ -8,6 +8,7 @@ import {
   updateProduct,
   deleteProductById,
   getProductById,
+  invalidateProductsCache,
 } from "@/lib/products";
 import { uploadProductImage, UploadError } from "@/lib/storage";
 import { lookupByArtistAlbum, type ProductLookup } from "@/lib/sku";
@@ -61,6 +62,7 @@ export async function createProductAction(
   }
 
   await createProduct({ ...parsed.data, imageUrl });
+  invalidateProductsCache();
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");
   redirect("/admin/productos");
@@ -93,6 +95,7 @@ export async function updateProductAction(
     album: existing.album,
     imageUrl: existing.imageUrl,
   });
+  invalidateProductsCache();
   revalidatePath("/catalogo");
   revalidatePath(`/catalogo/${id}`);
   revalidatePath("/admin/productos");
@@ -102,6 +105,7 @@ export async function updateProductAction(
 export async function deleteProductAction(id: string) {
   await requireAdminSession();
   await deleteProductById(id);
+  invalidateProductsCache();
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");
 }
@@ -113,6 +117,7 @@ export async function createPromotionAction(
 ) {
   await requireAdminSession();
   await createPromotion(productId, percent, days);
+  invalidateProductsCache();
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");
 }
@@ -120,6 +125,7 @@ export async function createPromotionAction(
 export async function endPromotionAction(promotionId: string) {
   await requireAdminSession();
   await endPromotion(promotionId);
+  invalidateProductsCache();
   revalidatePath("/catalogo");
   revalidatePath("/admin/productos");
 }
