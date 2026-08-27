@@ -36,6 +36,13 @@ export function parseSort(value: string | string[] | undefined): SortOption {
   return "nuevo";
 }
 
+// `new Date(x)` en vez de `x.getTime()` directo: los productos que salen de
+// getProductsWithAvailability pasaron por unstable_cache, que serializa a JSON,
+// así que en un cache hit `createdAt` llega como string ISO, no como Date real.
+function createdAtMs(product: ProductWithAvailability): number {
+  return new Date(product.createdAt).getTime();
+}
+
 function sortProducts(
   products: ProductWithAvailability[],
   sort: SortOption,
@@ -50,7 +57,7 @@ function sortProducts(
       return sorted.sort((a, b) => b.effectivePrice - a.effectivePrice);
     case "nuevo":
     default:
-      return sorted.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return sorted.sort((a, b) => createdAtMs(b) - createdAtMs(a));
   }
 }
 
@@ -187,7 +194,7 @@ export async function getProductsByIds(
 
 export async function getAllProductsForAdmin(): Promise<ProductWithAvailability[]> {
   const products = await getProductsWithAvailability();
-  return products.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return products.sort((a, b) => createdAtMs(b) - createdAtMs(a));
 }
 
 /** Admin-only: el costo nunca viaja con ProductWithAvailability, así que se trae aparte. */
@@ -210,14 +217,14 @@ export async function getSlowMovers(limit = 3): Promise<SlowMover[]> {
   const now = Date.now();
   return products
     .filter((p) => p.availableUnits > 0)
-    .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())
+    .sort((a, b) => createdAtMs(a) - createdAtMs(b))
     .slice(0, limit)
     .map((p) => ({
       id: p.id,
       artist: p.artist,
       album: p.album,
       imageUrl: p.imageUrl,
-      daysInInventory: Math.floor((now - p.createdAt.getTime()) / 86_400_000),
+      daysInInventory: Math.floor((now - createdAtMs(p)) / 86_400_000),
     }));
 }
 

@@ -36,8 +36,11 @@ export async function getActivePromotionForProduct(
   return promo ? { id: promo.id, percent: promo.percent, endsAt: promo.endsAt } : null;
 }
 
+// `date` puede llegar como string ISO (no un Date real) cuando viene de datos que
+// pasaron por unstable_cache, que serializa/deserializa a JSON. `new Date(...)`
+// normaliza ambos casos.
 export function daysUntil(date: Date): number {
-  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86_400_000));
+  return Math.max(0, Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000));
 }
 
 export function applyDiscount(price: number, promo: ActivePromotion | Promotion | null): number {
